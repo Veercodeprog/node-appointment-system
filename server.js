@@ -71,6 +71,22 @@ app.post("/booking", async (req, res) => {
     res.status(500).json({ message: "Failed to book appointment" });
   }
 });
+app.get("/booked-appointments", async (req, res) => {
+  const { appointmentDate, serviceName } = req.query;
+  console.log(appointmentDate, serviceName);
+
+  try {
+    let query = { appointmentDate };
+    if (serviceName) {
+      query.serviceName = serviceName;
+    }
+    const bookings = await Booking.find(query);
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
 
 app.delete("/users/:id", async (req, res) => {
   const { id } = req.params;
@@ -89,6 +105,52 @@ app.delete("/users/:id", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+//my requests
+app.get("/my-requests", async (req, res) => {
+  const username = req.query.username; // Assuming you have middleware to get authenticated user
+  console.log("username", username);
+  try {
+    const bookings = await Booking.find({
+      createdBy: username,
+    }).sort({
+      createdAt: -1,
+    });
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching my requests:", error);
+    res.status(500).json({ message: "Failed to fetch bookings." });
+  }
+});
+// Update booking status to approved
+
+app.put("/:id/approve", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const booking = await Booking.findByIdAndUpdate(
+      id,
+      { status: true },
+      { new: true }
+    );
+    res.json(booking);
+  } catch (error) {
+    console.error("Error approving booking:", error);
+    res.status(500).json({ message: "Failed to approve booking." });
+  }
+});
+// Update booking status to approved
+// Delete a booking
+app.delete("/:id", async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    await Booking.findByIdAndDelete(id);
+    res.json({ message: "Booking deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting booking:", error);
+    res.status(500).json({ message: "Failed to delete booking." });
+  }
+});
 
 //get all services
 app.get("/services", async (req, res) => {
@@ -97,6 +159,16 @@ app.get("/services", async (req, res) => {
     res.json(services);
   } catch (error) {
     console.error("Error fetching services:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+//get all bookings
+app.get("/bookings", async (req, res) => {
+  try {
+    const bookings = await Booking.find();
+    res.json(bookings);
+  } catch (error) {
+    console.error("Error fetching bookings:", error);
     res.status(500).json({ message: "Server error" });
   }
 });

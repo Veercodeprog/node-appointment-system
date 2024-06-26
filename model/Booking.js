@@ -27,6 +27,10 @@ const bookingSchema = new Schema({
     type: Date,
     default: Date.now,
   },
+  status: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 // Create model from schema
