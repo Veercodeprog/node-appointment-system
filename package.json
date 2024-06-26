@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "vercel-build": "npm install && npm run build",
+    "vercel-build": "npm install",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Dave Gray",
