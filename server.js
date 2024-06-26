@@ -13,6 +13,8 @@ const mongoose = require("mongoose");
 const connectDB = require("./config/dbConn");
 const PORT = process.env.PORT || 3500;
 const User = require("./model/User");
+const Service = require("./model/Service");
+const Booking = require("./model/Booking");
 // Connect to MongoDB
 connectDB();
 
@@ -44,6 +46,32 @@ app.use("/register", require("./routes/register"));
 app.use("/auth", require("./routes/auth"));
 app.use("/refresh", require("./routes/refresh"));
 app.use("/logout", require("./routes/logout"));
+//booking
+app.post("/booking", async (req, res) => {
+  const { serviceName, charges, appointmentDate, appointmentTime, createdBy } =
+    req.body;
+
+  try {
+    // Create new booking
+    const newBooking = new Booking({
+      serviceName,
+      charges,
+      appointmentDate,
+      appointmentTime,
+      createdBy,
+    });
+
+    await newBooking.save();
+
+    res
+      .status(200)
+      .json({ message: "Booking successful", booking: newBooking });
+  } catch (error) {
+    console.error("Error booking appointment:", error);
+    res.status(500).json({ message: "Failed to book appointment" });
+  }
+});
+
 app.delete("/users/:id", async (req, res) => {
   const { id } = req.params;
 
@@ -58,6 +86,17 @@ app.delete("/users/:id", async (req, res) => {
     res.json({ message: "User deleted successfully" });
   } catch (err) {
     console.error("Error deleting user:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+//get all services
+app.get("/services", async (req, res) => {
+  try {
+    const services = await Service.find();
+    res.json(services);
+  } catch (error) {
+    console.error("Error fetching services:", error);
     res.status(500).json({ message: "Server error" });
   }
 });
@@ -97,7 +136,104 @@ app.put("/users/:id/role", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+// Example route to delete a service
+app.delete("/services/:id", async (req, res) => {
+  const serviceId = req.params.id;
+  try {
+    const service = await Service.findByIdAndDelete(serviceId);
+    if (!service) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+    res.json({ message: "Service deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting service:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+app.post("/addservice", async (req, res) => {
+  const { serviceName, charges } = req.body;
 
+  try {
+    // Create new service
+    const newService = new Service({
+      serviceName,
+      charges,
+      timingSlots: generateDefaultTimingSlots(),
+    });
+
+    // Save service to database
+    await newService.save();
+
+    res.status(201).json(newService);
+  } catch (err) {
+    console.error("Error creating service:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+// PUT edit a service
+app.put("/services/:id", async (req, res) => {
+  const { id } = req.params;
+  const { serviceName, charges } = req.body;
+
+  try {
+    const updatedService = await Service.findByIdAndUpdate(
+      id,
+      { serviceName, charges },
+      { new: true }
+    );
+
+    if (!updatedService) {
+      return res.status(404).json({ message: "Service not found" });
+    }
+
+    res.json(updatedService);
+  } catch (error) {
+    console.error("Error updating service:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Function to generate default timing slots from Monday to Friday, 10 AM to 6 PM
+function generateDefaultTimingSlots() {
+  const slots = [];
+  const weekdays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"];
+  const startTime = 10; // 10 AM
+  const endTime = 18; // 6 PM
+
+  weekdays.forEach((day) => {
+    for (let hour = startTime; hour < endTime; hour++) {
+      slots.push({
+        day: day,
+        time: `${hour}:00 - ${hour + 1}:00`,
+        available: true,
+      });
+    }
+  });
+
+  return slots;
+}
+app.put("/add/timingSlots/:serviceId", async (req, res) => {
+  const { serviceId } = req.params;
+  const { timingSlots } = req.body;
+
+  try {
+    // Update timingSlots for the service identified by serviceId
+    const updatedService = await Service.findByIdAndUpdate(
+      serviceId,
+      { timingSlots },
+      { new: true } // To return the updated document
+    );
+
+    if (!updatedService) {
+      return res.status(404).json({ error: "Service not found" });
+    }
+
+    res.status(200).json(updatedService.timingSlots); // Return updated timingSlots
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Error updating timing slots" });
+  }
+});
 app.use(verifyJWT); // verify JWT for all routes below this line
 app.use("/employees", require("./routes/api/employees"));
 app.use("/users", require("./routes/api/users"));
