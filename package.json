@@ -5,7 +5,9 @@
   "main": "server.js",
   "scripts": {
     "start": "node server",
-    "dev": "nodemon server"
+    "dev": "nodemon server",
+    "vercel-build": "echo hello",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "Dave Gray",
   "license": "ISC",
@@ -27,3 +29,4 @@
     "nodemon": "^2.0.12"
   }
 }
+
